@@ -1,4 +1,3 @@
-
 # House Painter App using Tkinter and OpenCV
 
 Welcome to the "Vencer Paint's House Painter App"! This application allows you to transform and paint images of houses using an intuitive graphical interface. Whether you want to experiment with colors, visualize changes, or simply have fun, this app has got you covered!
