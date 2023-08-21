@@ -61,6 +61,7 @@ python3 app.py
 </center>
 
 - **Color Selection**: Choose colors from a wide palette to paint specific areas of the house.
+  
 <center>
    <div style="text-align:center;">
       <video controls>
@@ -69,7 +70,10 @@ python3 app.py
       </video>
    </div>
 </center>
+
 - **Undo**: If you make a mistake, you can undo the last paint action.
+
+- 
 <center>
    <div style="text-align:center;">
       <video controls>
@@ -78,7 +82,10 @@ python3 app.py
       </video>
    </div>
 </center>
+
 - **Clear Paint**: Clear all paint and revert to the original image.
+
+- 
 <center>
    <div style="text-align:center;">
       <video controls>
@@ -87,7 +94,9 @@ python3 app.py
       </video>
    </div>
 </center>
+
 - **PDF Export**: Save your painted house as a PDF, including the original image, painted version, and color information.
+
 <center>
    <div style="text-align:center;">
       <video controls>
