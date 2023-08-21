@@ -19,6 +19,10 @@ You can install the necessary dependencies using the following command:
 ```bash
 pip install opencv-python-headless opencv-python-headless numpy pillow
 ```
+or by running the requirements file using the following command:
+```bash
+pip install -r requirements.txt
+```
 
 ## Usage
 
