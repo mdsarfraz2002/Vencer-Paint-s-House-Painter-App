@@ -56,13 +56,34 @@ python3 app.py
 
 - **Image Loading**: Upload house images to the canvas for painting.
 
+<video controls>
+   <source src="Videos/Uploading.mp4">
+</video>
+
 - **Color Selection**: Choose colors from a wide palette to paint specific areas of the house.
+
+<video controls>
+   <source src="Videos/Paint.mp4">
+</video>
 
 - **Undo**: If you make a mistake, you can undo the last paint action.
 
+<video controls>
+   <source src="Videos/Undo.mp4">
+</video>
+
 - **Clear Paint**: Clear all paint and revert to the original image.
 
+<video controls>
+   <source src="Videos/Clear.mp4">
+</video>
+
 - **PDF Export**: Save your painted house as a PDF, including the original image, painted version, and color information.
+
+<video controls>
+   <source src="Videos/Save.mp4">
+</video>
+
 ## Acknowledgments
 
 This app was exclusively developed for Vencer Paint's, utilizing the power of OpenCV for precise image manipulation and Tkinter for crafting an intuitive graphical user interface tailored to the needs of the company. The inspiration behind this project was driven by the desire to provide Vencer Paint's with a unique tool that empowers their clients to visualize and experiment with color options for their houses.
