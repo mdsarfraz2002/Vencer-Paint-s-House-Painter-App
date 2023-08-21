@@ -51,15 +51,51 @@ python3 app.py
 ## Features
 
 - **Image Loading**: Upload house images to the canvas for painting.
+<center>
+   <div style="text-align:center;">
+      <video controls>
+         <source src="Videos/Uploading.mp4" type="video/mp4">
+         Your browser does not support the video tag.
+      </video>
+   </div>
+</center>
 
 - **Color Selection**: Choose colors from a wide palette to paint specific areas of the house.
-
+<center>
+   <div style="text-align:center;">
+      <video controls>
+         <source src="Videos/Uploading.mp4" type="video/mp4">
+         Your browser does not support the video tag.
+      </video>
+   </div>
+</center>
 - **Undo**: If you make a mistake, you can undo the last paint action.
-
+<center>
+   <div style="text-align:center;">
+      <video controls>
+         <source src="Videos/Paint.mp4" type="video/mp4">
+         Your browser does not support the video tag.
+      </video>
+   </div>
+</center>
 - **Clear Paint**: Clear all paint and revert to the original image.
-
+<center>
+   <div style="text-align:center;">
+      <video controls>
+         <source src="Videos/Undo.mp4" type="video/mp4">
+         Your browser does not support the video tag.
+      </video>
+   </div>
+</center>
 - **PDF Export**: Save your painted house as a PDF, including the original image, painted version, and color information.
-
+<center>
+   <div style="text-align:center;">
+      <video controls>
+         <source src="Videos/Save.mp4" type="video/mp4">
+         Your browser does not support the video tag.
+      </video>
+   </div>
+</center>
 
 ## Acknowledgments
 
