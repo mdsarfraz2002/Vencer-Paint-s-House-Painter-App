@@ -52,66 +52,13 @@ python3 app.py
 
 - **Image Loading**: Upload house images to the canvas for painting.
 
-<video controls>
-   <source src="Videos/Uploading.mp4" type="video/mp4">
-</video>
-
 - **Color Selection**: Choose colors from a wide palette to paint specific areas of the house.
-<<<<<<< HEAD
 
 - **Undo**: If you make a mistake, you can undo the last paint action.
 
 - **Clear Paint**: Clear all paint and revert to the original image.
 
 - **PDF Export**: Save your painted house as a PDF, including the original image, painted version, and color information.
-
-=======
-  
-<center>
-   <div style="text-align:center;">
-      <video controls>
-         <source src="Videos/Uploading.mp4" type="video/mp4">
-         Your browser does not support the video tag.
-      </video>
-   </div>
-</center>
-
-- **Undo**: If you make a mistake, you can undo the last paint action.
-
-- 
-<center>
-   <div style="text-align:center;">
-      <video controls>
-         <source src="Videos/Paint.mp4" type="video/mp4">
-         Your browser does not support the video tag.
-      </video>
-   </div>
-</center>
-
-- **Clear Paint**: Clear all paint and revert to the original image.
-
-- 
-<center>
-   <div style="text-align:center;">
-      <video controls>
-         <source src="Videos/Undo.mp4" type="video/mp4">
-         Your browser does not support the video tag.
-      </video>
-   </div>
-</center>
-
-- **PDF Export**: Save your painted house as a PDF, including the original image, painted version, and color information.
-
-<center>
-   <div style="text-align:center;">
-      <video controls>
-         <source src="Videos/Save.mp4" type="video/mp4">
-         Your browser does not support the video tag.
-      </video>
-   </div>
-</center>
->>>>>>> 06fe5bb17a8aa5308bac0f2029a04420deee47a7
-
 ## Acknowledgments
 
 This app was exclusively developed for Vencer Paint's, utilizing the power of OpenCV for precise image manipulation and Tkinter for crafting an intuitive graphical user interface tailored to the needs of the company. The inspiration behind this project was driven by the desire to provide Vencer Paint's with a unique tool that empowers their clients to visualize and experiment with color options for their houses.
