@@ -1,11 +1,11 @@
 '''Color Picker GUI for the app using Tkinter'''
 
-# Importing the required libraries
+#Importing the required libraries
 import tkinter as tk
 import pandas as pd
 from tkinter import Scrollbar
 
-# Creating the class for the color picker
+#Creating a class for the color picker
 class ColorPicker:
     def __init__(self, parent, callback):
         self.parent = parent
@@ -13,45 +13,46 @@ class ColorPicker:
 
         self.color_picker_window = tk.Toplevel(self.parent)
         self.color_picker_window.title("Color Picker")
-        self.color_picker_window.geometry("900x600")  # Seting window dimensions
+        self.color_picker_window.geometry("900x600")
 
-        # Choosing Color label
         self.choose_color_label = tk.Label(self.color_picker_window, text="Enter color code or name:")
         self.choose_color_label.pack(anchor=tk.NW, padx=20, pady=10)
 
-        # Extracting unique brand and category values for filter options
+        #Reading the color code excel file
         self.color_data = pd.read_excel("Color code vencer paints.xlsx")
-        self.unique_brands = ["All Brands"] + self.color_data["brand_id"].unique().tolist()
-        self.unique_categories = ["All Categories"] + self.color_data["color_category_id"].unique().tolist()
+        #Creating a list of default colors
+        self.default_colors = [
+            "Waterfall", "Countryside", "Cool Crystal N", "Victorian Wisp",
+            "Blue Clover", "Pink Plume", "Cascade Green", "Mid Buff",
+            "Ivory", "Brandy", "Sands of Time", "Deep Orange"
+        ]
 
-        # Creating a frame for the top row
+        self.unique_brands = ["All Brands"] + self.color_data["brand_id"].unique().tolist()
+        self.brand_filter_var = tk.StringVar()
+        self.brand_filter_var.set("All Brands")
+
+        self.unique_categories = ["All Categories"] + self.color_data["color_category_id"].unique().tolist()
+        self.category_filter_var = tk.StringVar()
+        self.category_filter_var.set("All Categories")
+
+        self.search_entry = tk.Entry(self.color_picker_window)
+        self.search_entry.pack(padx=20, pady=(0, 10), fill=tk.X)
+
+        self.search_button = tk.Button(self.color_picker_window, text="Search", command=self.search_color)
+        self.search_button.pack(padx=20, pady=(0, 10), anchor=tk.W)
+
         top_row_frame = tk.Frame(self.color_picker_window)
         top_row_frame.pack(padx=20, pady=(0, 10), fill=tk.X)
 
-        # Searching entry and button
-        self.search_entry = tk.Entry(top_row_frame)
-        self.search_entry.pack(side=tk.LEFT, padx=(0, 10))
-
-        self.search_button = tk.Button(top_row_frame, text="Search", command=self.search_color)
-        self.search_button.pack(side=tk.LEFT)
-
-        # Brand filter
-        self.brand_filter_var = tk.StringVar()
-        self.brand_filter_var.set("All Brands")
         self.brand_filter = tk.OptionMenu(top_row_frame, self.brand_filter_var, *self.unique_brands)
-        self.brand_filter.pack(side=tk.LEFT, padx=(10, 0))
+        self.brand_filter.pack(side=tk.LEFT, padx=(10, 10))
 
-        # Category filter
-        self.category_filter_var = tk.StringVar()
-        self.category_filter_var.set("All Categories")
         self.category_filter = tk.OptionMenu(top_row_frame, self.category_filter_var, *self.unique_categories)
         self.category_filter.pack(side=tk.LEFT)
 
-        # Creating a frame for color display
         self.color_display_frame = tk.Frame(self.color_picker_window, bg="white")
-        self.color_display_frame.pack(pady=20, padx=20, fill=tk.BOTH, expand=True)
+        self.color_display_frame.pack(padx=20, pady=(0, 10), fill=tk.BOTH, expand=True)
 
-        # Scrollbar for color display frame
         self.scrollbar = Scrollbar(self.color_display_frame, orient="vertical")
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
@@ -67,14 +68,19 @@ class ColorPicker:
 
         self.search_entry.bind("<Return>", lambda event: self.search_color())
 
-        self.update_color_display()
-        self.search_color()
+        self.load_default_colors()
 
-    # Function to configure the frame
+    #Function to configure the frame
     def on_frame_configure(self, event):
         self.color_display_canvas.configure(scrollregion=self.color_display_canvas.bbox("all"))
 
-    # Function to search for the color
+    #Function to load the default colors
+    def load_default_colors(self):
+        filtered_data = self.color_data[self.color_data["Name"].isin(self.default_colors)]
+        self.filtered_color_data = filtered_data
+        self.update_color_display()
+
+    #Function to search for a color
     def search_color(self):
         search_term = self.search_entry.get()
         filtered_data = self.color_data[
@@ -85,7 +91,7 @@ class ColorPicker:
         self.filtered_color_data = filtered_data
         self.update_color_display()
 
-    # Function to update the color display
+    #Function to update the color display
     def update_color_display(self):
         for widget in self.color_display_inner_frame.winfo_children():
             widget.destroy()
@@ -109,21 +115,20 @@ class ColorPicker:
 
                 column_index += 1
                 if column_index == colors_per_row:
-                    row_index += 2  # Moving to the next row
+                    row_index += 2
                     column_index = 0
 
-            # Adding a separator at the end of the last row if it's a complete row
             if total_items % colors_per_row == 0:
                 row_separator = tk.Frame(self.color_display_inner_frame, height=row_spacing)
                 row_separator.grid(row=row_index, column=0, columnspan=colors_per_row)
 
-    # Function to selected the color
+    #Function to select a color
     def color_selected(self, color):
         self.color = color
         self.callback(self.color)
         self.color_picker_window.destroy()
 
-# Main function
+#Main function
 if __name__ == "__main__":
     def color_callback(selected_color):
         print(f"Selected color: {selected_color}")

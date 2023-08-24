@@ -209,7 +209,8 @@ class HousePainterApp:
                     # Drawing company logo
                 logo_path = "Images/logo.png"  
                 pdf_canvas.drawImage(ImageReader(logo_path), 100, 700, width=100, height=50)
-
+                    # drawing white color for a gap..
+                pdf_canvas.setFillColorRGB(255, 255, 255)
                     # Drawing the painted image
                 painted_image_pil = Image.fromarray(cv2.cvtColor(self.segmented_image, cv2.COLOR_BGR2RGB))
                 painted_image_path = "painted_image.png"  
@@ -218,7 +219,7 @@ class HousePainterApp:
                     # Deleting the temporary image
                 os.remove(painted_image_path)
 
-                    # Drawing color box and code
+                # Drawing color box and code
                 color_rgb = tuple(int(self.color[i:i+2], 16) for i in (1, 3, 5))
                 pdf_canvas.setFillColorRGB(*color_rgb)
                 pdf_canvas.rect(100, 100, 50, 50, fill=1)
