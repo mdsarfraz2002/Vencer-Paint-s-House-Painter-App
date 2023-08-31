@@ -191,8 +191,6 @@ class HousePainterApp:
 
             # Explicitly casting the color to a tuple of integers
             fill_color = tuple(map(int, color))
-            print(f"Seed Point: {seed_point}")  # Debugging
-            print(f"Fill Color: {fill_color}")  # Debugging
 
             # Save the state before painting for undo functionality
             self.undo_stack.append(self.segmented_image.copy())
