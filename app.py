@@ -10,7 +10,11 @@ from PIL import Image, ImageTk
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
-from ColorPicker import ColorPicker
+from FewColors import ColorPicker
+from sklearn.cluster import KMeans
+from PIL import Image, ImageTk, ImageDraw
+from PIL import ImageDraw
+
 
 # Creating the HousePainterApp class
 class HousePainterApp:
@@ -40,11 +44,14 @@ class HousePainterApp:
         self.undo_image_path = "Images/3.png"
         self.clear_paint_image_path = "Images/4.png"
         self.save_image_path = "Images/5.png"
+        self.eraser_image_path = "Images/eraser.png"
+
 
         # Creating PhotoImage objects for each button
         self.upload_image = self.load_and_resize_image(self.upload_image_path, (50, 50))
         self.pick_color_image = self.load_and_resize_image(self.pick_color_image_path, (50, 50))
         self.undo_image = self.load_and_resize_image(self.undo_image_path, (50, 50))
+        self.eraser_image = self.load_and_resize_image(self.eraser_image_path, (50, 50))
         self.clear_paint_image = self.load_and_resize_image(self.clear_paint_image_path, (50, 50))
         self.saving_image = self.load_and_resize_image(self.save_image_path, (50, 50))
 
@@ -75,6 +82,9 @@ class HousePainterApp:
         self.color = None
         self.undo_stack = []
 
+        self.eraser_button = tk.Button(self.button_frame, image=self.eraser_image, command=self.set_eraser, text="Eraser", compound=tk.LEFT, bg="#FFFFFF", fg="black", borderwidth=0, highlightthickness=0)
+        self.eraser_button.pack(fill=tk.X, pady=18)
+
         self.clear_paint_button = tk.Button(self.button_frame, image=self.clear_paint_image, command=self.clear_paint, text="Clear",compound=tk.LEFT, bg="#FF5722", fg="black", borderwidth=0, highlightthickness=0)
         self.clear_paint_button.pack(fill=tk.X, pady=18)
 
@@ -82,6 +92,7 @@ class HousePainterApp:
         self.save_button.pack(fill=tk.X, pady=18)
         self.root.grid_columnconfigure(1, weight=0, uniform="right_column")
         self.canvas.bind("<Button-1>", self.on_canvas_click)
+        self.original_colors = set()
 
     # Function to load and resize images
     def load_and_resize_image(self, image_path, size):
@@ -89,6 +100,11 @@ class HousePainterApp:
         resized_image = image.resize(size, Image.LANCZOS)
 
         return ImageTk.PhotoImage(resized_image)
+    
+    # Function to set the eraser
+    def set_eraser(self):
+        self.color = "#FFFFFF"
+        self.color_picker_button.config(bg=self.color)
 
     # Function to load the image
     def load_photo(self):
@@ -104,27 +120,58 @@ class HousePainterApp:
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         height, width, _ = image_rgb.shape
 
-        # Calculating the dimensions to fit within the maximum canvas dimensions
-        if width > self.max_canvas_width or height > self.max_canvas_height:
-            aspect_ratio = width / height
-            if width > self.max_canvas_width:
-                width = self.max_canvas_width
-                height = int(width / aspect_ratio)
-            if height > self.max_canvas_height:
-                height = self.max_canvas_height
-                width = int(height * aspect_ratio)
+        canvas_width = self.canvas.winfo_width()  
+        canvas_height = self.canvas.winfo_height()  
 
-        pil_image = Image.fromarray(cv2.resize(image_rgb, (width, height)))
+        # Calculating aspect ratios
+        img_aspect = width / height
+        canvas_aspect = canvas_width / canvas_height
+
+        # Determining new dimensions based on aspect ratios
+        if img_aspect > canvas_aspect:
+            # Width will be the limiting factor
+            new_width = canvas_width
+            new_height = int(canvas_width / img_aspect)
+        else:
+            # Height will be the limiting factor
+            new_height = canvas_height
+            new_width = int(canvas_height * img_aspect)
+
+        # Resizing and displaying image
+        pil_image = Image.fromarray(cv2.resize(image_rgb, (new_width, new_height)))
         self.photo = ImageTk.PhotoImage(image=pil_image)
-        self.canvas.config(width=width, height=height)
-        self.canvas.create_image(0, 0, anchor="nw", image=self.photo)
-        self.canvas.image = self.photo
+        
+        # Centering the image on the canvas
+        center_x = canvas_width // 2
+        center_y = canvas_height // 2
+        
+        self.canvas.config(width=new_width, height=new_height)
+        self.canvas.create_image(center_x, center_y, anchor="center", image=self.photo)
+        
+        # Storing the dimensions for later use
+        self.image_width = new_width
+        self.image_height = new_height
+        
+        self.canvas.image = self.photo  # Keeping a reference to avoid garbage collection
 
     # Function to handle mouse clicks on the canvas
     def on_canvas_click(self, event):
         if self.segmented_image is not None:
-            x, y = event.x, event.y
-            if 0 <= x < self.segmented_image.shape[1] and 0 <= y < self.segmented_image.shape[0]:
+            canvas_width = self.canvas.winfo_width()
+            canvas_height = self.canvas.winfo_height()
+
+            img_height, img_width, _ = self.segmented_image.shape
+
+            # Calculating the offsets to center the image
+            x_offset = (canvas_width - self.image_width) // 2
+            y_offset = (canvas_height - self.image_height) // 2
+
+            # Converting canvas coordinates to image coordinates, accounting for the offset
+            x = int((event.x - x_offset) / self.image_width * img_width)
+            y = int((event.y - y_offset) / self.image_height * img_height)
+
+
+            if 0 <= x < img_width and 0 <= y < img_height:
                 if self.color == "#FFFFFF":  # If eraser is selected
                     self.paint_selected_area(x, y, (255, 255, 255))  # Filling with eraser color
                 else:
@@ -134,21 +181,33 @@ class HousePainterApp:
                         bgr_color = (bgr_color[2], bgr_color[1], bgr_color[0])  # Converting RGB to BGR
                         self.paint_selected_area(x, y, bgr_color)
 
+
     # Function to paint the selected area
     def paint_selected_area(self, x, y, color):
         if self.segmented_image is not None:
-            mask = np.zeros_like(self.segmented_image)
+            mask = np.zeros((self.segmented_image.shape[0] + 2, self.segmented_image.shape[1] + 2), np.uint8)
             seed_point = (x, y)
             target_color = self.segmented_image[y, x]
 
-            if np.array_equal(color, (255, 255, 255)):  # If eraser color is selected
-                fill_color = target_color  # Keeping the original color for erasing
-            else:
-                fill_color = color
+            # Explicitly casting the color to a tuple of integers
+            fill_color = tuple(map(int, color))
+            print(f"Seed Point: {seed_point}")  # Debugging
+            print(f"Fill Color: {fill_color}")  # Debugging
 
-            self.fill_region(mask, seed_point, target_color, fill_color)
-            self.undo_stack.append(self.segmented_image.copy())  # Saving the state before painting
-            self.segmented_image = np.where(mask != 0, mask, self.segmented_image)
+            # Save the state before painting for undo functionality
+            self.undo_stack.append(self.segmented_image.copy())
+
+            try:
+                # Test with hardcoded values
+                cv2.floodFill(self.segmented_image.copy(), mask.copy(), seed_point, (0, 255, 0),
+                            loDiff=(20, 20, 20, 20), upDiff=(20, 20, 20, 20))
+
+                # Actual flood fill call
+                cv2.floodFill(self.segmented_image, mask, seed_point, fill_color,
+                            loDiff=(20, 20, 20, 20), upDiff=(20, 20, 20, 20))
+            except Exception as e:
+                print(f"Exception: {e}")
+
             self.display_image(self.segmented_image)
 
     # Function to fill the region
@@ -170,7 +229,7 @@ class HousePainterApp:
                     stack.append((x, y + 1))
 
     # Function to check if two colors are similar
-    def is_similar_color(self, color1, color2, tolerance=7):
+    def is_similar_color(self, color1, color2, tolerance=20):
         diff = np.abs(np.array(color1, dtype=np.int16) - np.array(color2, dtype=np.int16))
         return np.all(diff <= tolerance)
 
@@ -200,33 +259,86 @@ class HousePainterApp:
             self.undo_stack.clear()  # Clearing the undo stack
             self.display_image(self.segmented_image)
 
+    # Function to extract unique colors
+    def extract_unique_colors(image, n_clusters=10):
+        image_reshaped = image.reshape((-1, 3))
+        kmeans = KMeans(n_clusters=n_clusters).fit(image_reshaped)
+        unique_colors = np.round(kmeans.cluster_centers_).astype(int)
+        return set([tuple(color) for color in unique_colors])
+    
+    # Function to round the color
+    def round_color(self, value, base=10):
+        return base * round(value/base)
+
+    # Function to extract unique colors
+    def extract_unique_colors(self,image):
+        image = self.segmented_image
+        unique_colors = set()
+        for y in range(image.shape[0]):
+            for x in range(image.shape[1]):
+                b, g, r = image[y, x]
+                rb, rg, rr = self.round_color(b), self.round_color(g), self.round_color(r)
+                unique_colors.add((rb, rg, rr))
+        return unique_colors
+
     # Function to save the image
     def save_image(self):
-        if self.segmented_image is not None and self.color is not None:
-            save_path = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")])
-            if save_path:
+        if self.segmented_image is not None:
+            filetypes = [
+                ("PDF files", "*.pdf"),
+                ("PNG files", "*.png"),
+                ("JPEG files", "*.jpg;*.jpeg")
+            ]
+            save_path = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=filetypes)
+            
+            if not save_path:
+                return  # User canceled the save dialog
+            
+            extension = os.path.splitext(save_path)[1].lower()
+
+            # Calculating positions
+            logo_size = (100, 100)  # Logo width and height
+            logo_position = (10, 10)  # Logo's top left position
+            image_position = (10, 130)  # Image's top left position, 20px below the logo
+            colors_position = (10, self.segmented_image.shape[0] + 250)  # Colors starting position
+
+            width, height = self.segmented_image.shape[1], self.segmented_image.shape[0]
+            canvas_height = colors_position[1] + 150  # Space for color details
+
+            # Creating a new canvas (an empty image)
+            canvas_image = Image.new('RGB', (width + 20, canvas_height), 'white')  # +20 for right and left margins
+
+            # Pasting the logo with transparency
+            logo_image = Image.open(self.logo_image_path).resize(logo_size)
+            canvas_image.paste(logo_image, logo_position, logo_image)  # Using logo_image as the mask to keep transparency
+
+            # Pasting the painted image below the logo
+            painted_image_pil = Image.fromarray(cv2.cvtColor(self.segmented_image, cv2.COLOR_BGR2RGB))
+            canvas_image.paste(painted_image_pil, image_position)
+
+            # Drawing the colors used
+            draw = ImageDraw.Draw(canvas_image)
+            current_colors = self.extract_unique_colors(self.segmented_image)
+            painted_colors = current_colors - self.original_colors
+
+            start_x, start_y = colors_position
+            for color in painted_colors:
+                color_hex = '#%02x%02x%02x' % (color[2], color[1], color[0])
+                draw.rectangle([(start_x, start_y), (start_x + 50, start_y + 50)], fill=color_hex)
+                draw.text((start_x + 60, start_y + 15), f"Color Code: {color_hex}", fill="black")
+                start_y += 70  # Adjusting based on the box size and the desired spacing
+
+            # Saving the canvas in the chosen format
+            if extension == ".pdf":
+                pdf_path = "temp_canvas_image.png"
+                canvas_image.save(pdf_path)
+                
                 pdf_canvas = canvas.Canvas(save_path, pagesize=letter)
-                    # Drawing company logo
-                logo_path = "Images/logo.png"  
-                pdf_canvas.drawImage(ImageReader(logo_path), 100, 700, width=100, height=50)
-                    # drawing white color for a gap..
-                pdf_canvas.setFillColorRGB(255, 255, 255)
-                    # Drawing the painted image
-                painted_image_pil = Image.fromarray(cv2.cvtColor(self.segmented_image, cv2.COLOR_BGR2RGB))
-                painted_image_path = "painted_image.png"  
-                painted_image_pil.save(painted_image_path)  
-                pdf_canvas.drawImage(ImageReader(painted_image_path), 100, 400, width=400, height=300)
-                    # Deleting the temporary image
-                os.remove(painted_image_path)
-
-                # Drawing color box and code
-                color_rgb = tuple(int(self.color[i:i+2], 16) for i in (1, 3, 5))
-                pdf_canvas.setFillColorRGB(*color_rgb)
-                pdf_canvas.rect(100, 100, 50, 50, fill=1)
-                pdf_canvas.setFont("Helvetica", 12)
-                pdf_canvas.drawString(170, 120, f"Color Code: {self.color}")
-
+                pdf_canvas.drawImage(ImageReader(pdf_path), 0, 0, width=width + 20, height=canvas_height)
+                os.remove(pdf_path)
                 pdf_canvas.save()
+            elif extension in [".png", ".jpg", ".jpeg"]:
+                canvas_image.save(save_path)
 
 # Main function
 if __name__ == "__main__":
