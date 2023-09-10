@@ -40,7 +40,7 @@ idna==3.4
 importlib-metadata==6.6.0
 importlib-resources==5.12.0
 ipykernel==6.23.1
-ipython==8.13.2
+ipython==8.13.0
 iso8601==1.1.0
 itsdangerous==2.1.2
 jax==0.4.10
