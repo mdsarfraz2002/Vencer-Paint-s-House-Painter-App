@@ -14,7 +14,7 @@ from FewColors import ColorPicker
 from sklearn.cluster import KMeans
 from PIL import Image, ImageTk, ImageDraw
 from PIL import ImageDraw
-
+from PIL import ImageFont
 
 # Creating the HousePainterApp class
 class HousePainterApp:
@@ -23,6 +23,8 @@ class HousePainterApp:
         self.root.title("Vencer Paint's House Painter App")
         self.root.configure(bg="#f0f0f0")  # Setting background color
         self.root.geometry("1200x900")
+
+        self.used_colors = set()
 
         # Creating frames for canvas and buttons
         self.canvas_frame = tk.Frame(root, bg="#f0f0f0")
@@ -46,7 +48,6 @@ class HousePainterApp:
         self.save_image_path = "Images/5.png"
         self.eraser_image_path = "Images/eraser.png"
 
-
         # Creating PhotoImage objects for each button
         self.upload_image = self.load_and_resize_image(self.upload_image_path, (50, 50))
         self.pick_color_image = self.load_and_resize_image(self.pick_color_image_path, (50, 50))
@@ -57,12 +58,13 @@ class HousePainterApp:
 
         self.max_canvas_width = 1100
         self.max_canvas_height = 900
+
         # Loading and resizing the logo image
         self.logo_image_path = "Images/logo.png"
-        self.logo_image = self.load_and_resize_image(self.logo_image_path, (120, 80))
+        self.logo_image = self.load_and_resize_image(self.logo_image_path, (100, 100))
         
         # Creating a frame for logo and buttons
-        self.logo_button_frame = tk.Frame(self.button_frame, bg="#f0f0f0")
+        self.logo_button_frame = tk.Frame(self.button_frame, bg="#f0f0f0", width=200)
         self.logo_button_frame.pack(fill=tk.X, pady=(40, 80))
 
         # Adding the logo label to the logo_button_frame
@@ -207,6 +209,8 @@ class HousePainterApp:
                 print(f"Exception: {e}")
 
             self.display_image(self.segmented_image)
+            if color != (255, 255, 255):
+                 self.used_colors.add(color)
 
     # Function to fill the region
     def fill_region(self, mask, seed_point, target_color, fill_color):
@@ -269,14 +273,12 @@ class HousePainterApp:
         return base * round(value/base)
 
     # Function to extract unique colors
-    def extract_unique_colors(self,image):
-        image = self.segmented_image
+    def extract_unique_colors(self, image):
         unique_colors = set()
         for y in range(image.shape[0]):
             for x in range(image.shape[1]):
                 b, g, r = image[y, x]
-                rb, rg, rr = self.round_color(b), self.round_color(g), self.round_color(r)
-                unique_colors.add((rb, rg, rr))
+                unique_colors.add((r, g, b))
         return unique_colors
 
     # Function to save the image
@@ -290,53 +292,85 @@ class HousePainterApp:
             save_path = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=filetypes)
             
             if not save_path:
-                return  # User canceled the save dialog
+                return  
             
+            # Determining the number of unique colors to display and set the canvas height accordingly
+            num_colors = len(self.used_colors)
+            color_display_height = 80 * ((num_colors // 4) + 1)
+                
+            # Extracting unique colors used in the painted house
+            current_colors = self.extract_unique_colors(self.segmented_image)
+
             extension = os.path.splitext(save_path)[1].lower()
 
-            # Calculating positions
-            logo_size = (100, 100)  # Logo width and height
-            logo_position = (10, 10)  # Logo's top left position
-            image_position = (10, 130)  # Image's top left position, 20px below the logo
-            colors_position = (10, self.segmented_image.shape[0] + 250)  # Colors starting position
-
-            width, height = self.segmented_image.shape[1], self.segmented_image.shape[0]
-            canvas_height = colors_position[1] + 150  # Space for color details
-
             # Creating a new canvas (an empty image)
-            canvas_image = Image.new('RGB', (width + 20, canvas_height), 'white')  # +20 for right and left margins
+            width, height = self.segmented_image.shape[1], self.segmented_image.shape[0]
+            canvas_height = height + 550  # assuming this is your canvas height
+            canvas_image = Image.new('RGB', (width + 120, canvas_height), 'white')
 
-            # Pasting the logo with transparency
-            logo_image = Image.open(self.logo_image_path).resize(logo_size)
-            canvas_image.paste(logo_image, logo_position, logo_image)  # Using logo_image as the mask to keep transparency
+            # Initializing the drawing context
+            draw = ImageDraw.Draw(canvas_image)
+
+            # Converting the segmented image to a PIL image
+            painted_image_pil = Image.fromarray(cv2.cvtColor(self.segmented_image, cv2.COLOR_BGR2RGB))
+
+            # Saving this image for debugging
+            painted_image_pil.save("debug_painted_image_pil.png")
+
+            # Resizing the painted image to 700x700
+            resized_painted_image_pil = painted_image_pil.resize((700, 700), Image.LANCZOS)
+
+            # Saving the resized image for debugging
+            resized_painted_image_pil.save("debug_resized_painted_image_pil.png")
+
+            # Pasting the logo
+            logo_image = Image.open(self.logo_image_path).convert("RGBA")
+            logo_image = logo_image.resize((100, 100), Image.LANCZOS)
+            canvas_image.paste(logo_image, (10, 10), mask=logo_image.split()[3])
+            draw=ImageDraw.Draw(canvas_image)
 
             # Pasting the painted image below the logo
             painted_image_pil = Image.fromarray(cv2.cvtColor(self.segmented_image, cv2.COLOR_BGR2RGB))
-            canvas_image.paste(painted_image_pil, image_position)
+            canvas_image.paste(painted_image_pil, (10, 130))
 
-            # Drawing the colors used
             draw = ImageDraw.Draw(canvas_image)
+
+            # Extracting unique colors from the painted image
             current_colors = self.extract_unique_colors(self.segmented_image)
-            painted_colors = current_colors - self.original_colors
 
-            start_x, start_y = colors_position
-            for color in painted_colors:
-                color_hex = '#%02x%02x%02x' % (color[2], color[1], color[0])
-                draw.rectangle([(start_x, start_y), (start_x + 50, start_y + 50)], fill=color_hex)
-                draw.text((start_x + 60, start_y + 15), f"Color Code: {color_hex}", fill="black")
-                start_y += 70  # Adjusting based on the box size and the desired spacing
+            # Drawing the color codes below the painted image
+            font_size = 40  # or whatever size you prefer
+            font = ImageFont.load_default()
 
+            y_position = 130 + self.segmented_image.shape[0] + 10
+            x_position = 10
+            col_count = 0
+            for color in self.used_colors:
+                if len(color) != 3:
+                    continue
+                color_hex = "#{:02x}{:02x}{:02x}".format(color[2], color[1], color[0])
+                draw.rectangle([x_position, y_position, x_position + 50, y_position + 50], fill=color_hex)
+                draw.text((x_position, y_position + 55), f"Color code: {color_hex}", fill="black", font=font)
+
+                col_count += 1
+                if col_count % 4 == 0:
+                    y_position += 150
+                    x_position = 10
+                else:
+                    x_position += 150
             # Saving the canvas in the chosen format
             if extension == ".pdf":
                 pdf_path = "temp_canvas_image.png"
                 canvas_image.save(pdf_path)
-                
-                pdf_canvas = canvas.Canvas(save_path, pagesize=letter)
-                pdf_canvas.drawImage(ImageReader(pdf_path), 0, 0, width=width + 20, height=canvas_height)
+                pdf_canvas = canvas.Canvas(save_path, pagesize=(width + 20, height + 150))
+                pdf_canvas.drawImage(pdf_path, 0, 0, width=width + 20, height=height + 150)
                 os.remove(pdf_path)
                 pdf_canvas.save()
             elif extension in [".png", ".jpg", ".jpeg"]:
                 canvas_image.save(save_path)
+
+            os.remove("debug_painted_image_pil.png")
+            os.remove("debug_resized_painted_image_pil.png")
 
 # Main function
 if __name__ == "__main__":
